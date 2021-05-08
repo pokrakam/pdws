@@ -3,12 +3,56 @@ REPORT zpdws.
 CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
 
   PUBLIC SECTION.
+    CLASS-METHODS load  IMPORTING iv_wf            TYPE sww_task
+                        RETURNING VALUE(rv_result) TYPE REF TO lcl_workflow_definition
+                        RAISING   zcx_abapgit_exception.
   PROTECTED SECTION.
   PRIVATE SECTION.
+    DATA mv_wf TYPE sww_task.
+    DATA mv_objid TYPE hrobjid.
+    DATA mo_wfdef TYPE REF TO cl_workflow_task_ws.
 
+    METHODS supply_instance RAISING zcx_abapgit_exception.
+    METHODS check_subrc_for IMPORTING iv_call TYPE clike OPTIONAL
+                            RAISING   zcx_abapgit_exception.
 ENDCLASS.
 
 CLASS lcl_workflow_definition IMPLEMENTATION.
+
+  METHOD load.
+    DATA lo_def TYPE REF TO lcl_workflow_definition.
+
+    lo_def = NEW #( ).
+    lo_def->mv_wf = iv_wf.
+    lo_def->mv_objid = iv_wf+2(8).
+    lo_def->supply_instance( ).
+    rv_result = lo_def.
+  ENDMETHOD.
+
+
+  METHOD supply_instance.
+
+    cl_workflow_factory=>create_ws(
+       EXPORTING
+         objid                        = mv_objid
+       RECEIVING
+         ws_inst                      = mo_wfdef
+       EXCEPTIONS
+         workflow_does_not_exist = 1
+         object_could_not_be_locked   = 2
+         objid_not_given              = 3
+         OTHERS                       = 4 )  ##SUBRC_OK.
+
+    check_subrc_for( 'CREATE_TS' ).
+
+  ENDMETHOD.
+
+
+  METHOD check_subrc_for.
+    IF sy-subrc <> 0.
+      zcx_abapgit_exception=>raise( iv_call && ' returned ' && sy-subrc ).
+    ENDIF.
+  ENDMETHOD.
 
 ENDCLASS.
 
@@ -16,8 +60,8 @@ CLASS lcl_main DEFINITION FINAL.
 
   PUBLIC SECTION.
 
-    CLASS-METHODS create IMPORTING i_wf            TYPE sww_task
-                         RETURNING VALUE(r_result) TYPE REF TO lcl_main.
+    CLASS-METHODS create IMPORTING i_wf             TYPE sww_task
+                         RETURNING VALUE(ro_result) TYPE REF TO lcl_main.
 
     METHODS run.
 
@@ -26,21 +70,28 @@ CLASS lcl_main DEFINITION FINAL.
 
   PRIVATE SECTION.
     TYPES:
-      ty_lt_versions TYPE STANDARD TABLE OF swd_versns WITH DEFAULT KEY.
+      ty_lt_versions TYPE STANDARD TABLE OF swd_versns WITH EMPTY KEY.
     METHODS get_active_definition_key RETURNING VALUE(rs_wf_definition_key) TYPE swd_wfdkey.
-    DATA wf TYPE sww_task.
+    DATA lv_wf TYPE sww_task.
 ENDCLASS.
 
 CLASS lcl_main IMPLEMENTATION.
 
   METHOD create.
-    CREATE OBJECT r_result.
-    r_result->wf = i_wf.
+    ro_result = NEW #( ).
+    ro_result->lv_wf = i_wf.
   ENDMETHOD.
 
 
 
   METHOD run.
+
+    TRY.
+        DATA(def) = lcl_workflow_definition=>load( lv_wf ).
+      CATCH zcx_abapgit_exception INTO DATA(lo_error).
+        WRITE / lo_error->get_text( ).
+    ENDTRY.
+
     DATA: ls_wf_definition_key TYPE swd_wfdkey,
 
           lo_wfd_xml           TYPE REF TO cl_xml_document_base,
@@ -58,16 +109,16 @@ CLASS lcl_main IMPLEMENTATION.
                                          wfd_key = ls_wf_definition_key ).
 
     IF lo_wfd_xml IS BOUND.
-*    lo_node->append_child( lo_wfd_xml->get_first_node( ) ).
+*  Blah foo bar lo_node->append_child( lo_wfd_xml->get_first_node( ) ).
       lo_wfd_xml->render_2_string(
         EXPORTING
-          pretty_print = 'X'              " Format Output
+          pretty_print = 'X'
         IMPORTING
-          retcode      = DATA(retcode)
-          stream       = DATA(stream)
-          size         = DATA(size)
+          retcode      = DATA(lv_retcode)
+          stream       = DATA(lv_stream)
+          size         = DATA(lv_size)
       ).
-      cl_demo_output=>display_xml( stream ).
+      cl_demo_output=>display_xml( lv_stream ).
     ELSE.
       cl_demo_output=>display( 'No XML' ).
     ENDIF.
@@ -80,7 +131,7 @@ CLASS lcl_main IMPLEMENTATION.
 
     CALL FUNCTION 'SWD_GET_VERSIONS_OF_WORKFLOW'
       EXPORTING
-        im_task          = wf
+        im_task          = lv_wf
         im_exetyp        = 'S'
       IMPORTING
         ex_active_wfdkey = rs_wf_definition_key
@@ -99,17 +150,6 @@ PARAMETERS p_wf TYPE sww_task DEFAULT 'WS90000005'.
 START-OF-SELECTION.
   lcl_main=>create( p_wf )->run( ).
 
-
-CLASS ltd_workflow DEFINITION FINAL FOR TESTING
-  DURATION SHORT
-  RISK LEVEL HARMLESS.
-
-  PRIVATE SECTION.
-    DATA cut TYPE REF TO lcl_workflow_definition.
-
-    METHODS setup.
-    METHODS      get_xml.
-ENDCLASS.
 
 CLASS lcl_text_lines DEFINITION.
   PUBLIC SECTION.
@@ -131,6 +171,21 @@ CLASS lcl_text_lines IMPLEMENTATION.
 
 ENDCLASS.
 
+
+CLASS ltd_workflow DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    DATA cut TYPE REF TO lcl_workflow_definition.
+
+    METHODS setup.
+    METHODS get_xml.
+    METHODS dummy FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
 CLASS ltd_workflow IMPLEMENTATION.
 
   METHOD setup.
@@ -138,7 +193,7 @@ CLASS ltd_workflow IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_xml.
-    DATA(xml) = new lcl_text_lines( ).
+    DATA(xml) = NEW lcl_text_lines( ).
 
     xml->add( `<workflow_exchange type="internal" release="752" version="1.0" xml:lang="EN" xmlns="http://www.sap.com/bc/bmt/wfm/def">` ).
     xml->add( ` <workflow id="WS90000005(0000)S">` ).
@@ -402,6 +457,38 @@ CLASS ltd_workflow IMPLEMENTATION.
     xml->add( ` </workflow>` ).
     xml->add( `</workflow_exchange>` ).
 
+  ENDMETHOD.
+
+  METHOD dummy.
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS ltc_test DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS:
+      can_load_instance FOR TESTING RAISING cx_static_check,
+      invalid_id_doesnt_load FOR TESTING RAISING cx_static_check.
+ENDCLASS.
+
+
+CLASS ltc_test IMPLEMENTATION.
+
+  METHOD can_load_instance.
+    DATA(mo_cut) = lcl_workflow_definition=>load( 'WS90000005' ).
+    cl_abap_unit_assert=>assert_bound( mo_cut ).
+  ENDMETHOD.
+
+  METHOD invalid_id_doesnt_load.
+    TRY.
+        DATA(mo_cut) = lcl_workflow_definition=>load( 'WS99999990' ).
+        cl_abap_unit_assert=>fail( 'Exception not raised' ).
+      CATCH zcx_abapgit_exception.
+        "As expected
+    ENDTRY.
   ENDMETHOD.
 
 ENDCLASS.
