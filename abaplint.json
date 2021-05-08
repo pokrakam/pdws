@@ -1,0 +1,13 @@
+{
+  "global": {
+    "files": "/src/**/*.*",
+    "skipGeneratedGatewayClasses": true,
+    "skipGeneratedPersistentClasses": true,
+    "skipGeneratedFunctionGroups": true
+  },
+  "rules": {
+  	"line_length": {
+  	  "length": 255
+  	}
+  }
+}
