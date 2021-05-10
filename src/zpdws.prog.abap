@@ -223,7 +223,7 @@ ENDCLASS.
 CLASS lcl_text_lines IMPLEMENTATION.
 
   METHOD add.
-    text = text && i_str  && cl_abap_char_utilities=>newline.
+    text = text && i_str."  && cl_abap_char_utilities=>newline.
   ENDMETHOD.
 
   METHOD get.
@@ -264,8 +264,8 @@ CLASS ltd_workflow IMPLEMENTATION.
 
     GET TIME STAMP FIELD ts.
 
-    xml->add( `` ).
-    xml->add( |<?xml version="1.0" encoding="utf-16"?>| ).
+*    xml->add( `` ).
+*    xml->add( |<?xml version="1.0" encoding="utf-16"?>| ).
     xml->add( |<workflow_exchange xmlns="http://www.sap.com/bc/bmt/wfm/def" type="internal" release="752" version="1.0" xml:lang="EN">| ).
     xml->add( | <workflow id="{ mv_wfid }(0000)S">| ).
     xml->add( |  <task>| ).
@@ -572,15 +572,34 @@ CLASS ltc_test IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD serialize.
+
     DATA(mock) = ltd_workflow=>create( c_test_wf ).
 
     DATA(lv_xml) = mo_cut->serialize( ).
-    lv_xml = zcl_abapgit_xml_pretty=>print( lv_xml ).
-    DATA(lv_exp) =  mock->get_xml( ).
-    IF lv_xml <> lv_exp.
-*      cl_abap_unit_assert=>assert_equals( act = lv_xml
-*                                          exp = lv_exp ).
-    ENDIF.
+    lv_xml = zcl_abapgit_xml_pretty=>print(
+               iv_xml           = lv_xml
+               iv_ignore_errors = abap_false
+               iv_unpretty      = abap_false
+             ).
+    REPLACE FIRST OCCURRENCE
+      OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
+      IN lv_xml
+      WITH '<?xml version="1.0" encoding="utf-8"?>'.
+
+    DATA(lv_exp) = mock->get_xml( ).
+    lv_exp = zcl_abapgit_xml_pretty=>print(
+               iv_xml           = lv_exp
+               iv_ignore_errors = abap_false
+               iv_unpretty      = abap_false
+             ).
+    REPLACE FIRST OCCURRENCE
+      OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
+      IN lv_exp
+      WITH '<?xml version="1.0" encoding="utf-8"?>'.
+
+    cl_abap_unit_assert=>assert_equals( act = lv_xml
+                                        exp = lv_exp ).
+
   ENDMETHOD.
 
 
