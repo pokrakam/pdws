@@ -290,7 +290,7 @@
     "max_one_statement": true,
     "message_exists": false,
     "method_length": {
-      "statements": 100,
+      "statements": 300,
       "ignoreTestClasses": false,
       "errorWhenEmpty": false
     },
