@@ -1,4 +1,4 @@
-REPORT zpdws.
+REPORT zabapgit_test_pdws.
 
 CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
 
@@ -26,7 +26,7 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
   METHOD load.
     DATA lo_def TYPE REF TO lcl_workflow_definition.
 
-    lo_def = NEW #( ).
+    CREATE OBJECT lo_def.
     lo_def->mv_wf = iv_wf.
     lo_def->mv_objid = iv_wf+2(8).
     lo_def->supply_instance( ).
@@ -67,14 +67,14 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
           lt_versions          TYPE TABLE OF swd_versns,
 
           lo_node              TYPE REF TO if_ixml_element,
-          def                  TYPE REF TO lcl_workflow_definition,
+          lo_def               TYPE REF TO lcl_workflow_definition,
           lo_error             TYPE REF TO zcx_abapgit_exception,
           lv_retcode           TYPE sysubrc,
           lv_stream            TYPE string,
           lv_size              TYPE sytabix.
 
     TRY.
-        def = lcl_workflow_definition=>load( mv_wf ).
+        lo_def = load( mv_wf ).
       CATCH zcx_abapgit_exception INTO lo_error.
         WRITE / lo_error->get_text( ).
     ENDTRY.
@@ -128,7 +128,7 @@ CLASS lcl_main DEFINITION FINAL.
 
   PUBLIC SECTION.
 
-    CLASS-METHODS create IMPORTING i_wf             TYPE sww_task
+    CLASS-METHODS create IMPORTING iv_wf            TYPE sww_task
                          RETURNING VALUE(ro_result) TYPE REF TO lcl_main.
 
     METHODS run.
@@ -138,16 +138,16 @@ CLASS lcl_main DEFINITION FINAL.
 
   PRIVATE SECTION.
     TYPES:
-      ty_lt_versions TYPE STANDARD TABLE OF swd_versns WITH EMPTY KEY.
+      ty_lt_versions TYPE STANDARD TABLE OF swd_versns WITH DEFAULT KEY.
     METHODS get_active_definition_key RETURNING VALUE(rs_wf_definition_key) TYPE swd_wfdkey.
-    DATA lv_wf TYPE sww_task.
+    DATA mv_wf TYPE sww_task.
 ENDCLASS.
 
 CLASS lcl_main IMPLEMENTATION.
 
   METHOD create.
-    ro_result = NEW #( ).
-    ro_result->lv_wf = i_wf.
+    CREATE OBJECT ro_result.
+    ro_result->mv_wf = iv_wf.
   ENDMETHOD.
 
 
@@ -161,14 +161,14 @@ CLASS lcl_main IMPLEMENTATION.
           lt_versions          TYPE TABLE OF swd_versns,
 
           lo_node              TYPE REF TO if_ixml_element,
-          lo_def                  TYPE REF TO lcl_workflow_definition,
+          lo_def               TYPE REF TO lcl_workflow_definition,
           lo_error             TYPE REF TO zcx_abapgit_exception,
           lv_retcode           TYPE sysubrc,
           lv_stream            TYPE string,
           lv_size              TYPE sytabix.
 
     TRY.
-        lo_def = lcl_workflow_definition=>load( lv_wf ).
+        lo_def = lcl_workflow_definition=>load( mv_wf ).
       CATCH zcx_abapgit_exception INTO lo_error.
         WRITE / lo_error->get_text( ).
     ENDTRY.
@@ -205,7 +205,7 @@ CLASS lcl_main IMPLEMENTATION.
 
     CALL FUNCTION 'SWD_GET_VERSIONS_OF_WORKFLOW'
       EXPORTING
-        im_task          = lv_wf
+        im_task          = mv_wf
         im_exetyp        = 'S'
       IMPORTING
         ex_active_wfdkey = rs_wf_definition_key
@@ -227,20 +227,20 @@ START-OF-SELECTION.
 
 CLASS lcl_text_lines DEFINITION.
   PUBLIC SECTION.
-    METHODS add IMPORTING i_str TYPE string.
-    METHODS get RETURNING VALUE(result) TYPE string.
+    METHODS add IMPORTING iv_str TYPE string.
+    METHODS get RETURNING VALUE(rv_result) TYPE string.
   PRIVATE SECTION.
-    DATA text TYPE string.
+    DATA mv_text TYPE string.
 ENDCLASS.
 
 CLASS lcl_text_lines IMPLEMENTATION.
 
   METHOD add.
-    text = text && i_str."  && cl_abap_char_utilities=>newline.
+    mv_text = mv_text && iv_str."  && cl_abap_char_utilities=>newline.
   ENDMETHOD.
 
   METHOD get.
-    result = text.
+    rv_result = mv_text.
   ENDMETHOD.
 
 ENDCLASS.
@@ -255,7 +255,7 @@ CLASS ltd_workflow DEFINITION FINAL FOR TESTING
     METHODS get_xml RETURNING VALUE(rv_result) TYPE string.
 
   PRIVATE SECTION.
-    DATA cut TYPE REF TO lcl_workflow_definition.
+    DATA mo_cut TYPE REF TO lcl_workflow_definition.
     DATA mv_wfid TYPE sww_task.
 
     METHODS dummy FOR TESTING RAISING cx_static_check.
@@ -266,7 +266,7 @@ ENDCLASS.
 CLASS ltd_workflow IMPLEMENTATION.
 
   METHOD create.
-    ro_result = NEW #( ).
+    create object ro_result.
     ro_result->mv_wfid = iv_wf_id.
   ENDMETHOD.
 
@@ -275,12 +275,10 @@ CLASS ltd_workflow IMPLEMENTATION.
     DATA lv_ts TYPE tzonref-tstamps.
     DATA lo_xml TYPE REF TO lcl_text_lines.
 
-    lo_xml = NEW lcl_text_lines( ).
+    create object lo_xml.
 
     GET TIME STAMP FIELD lv_ts.
 
-*    xml->add( `` ).
-*    xml->add( |<?xml version="1.0" encoding="utf-16"?>| ).
     lo_xml->add( |<workflow_exchange xmlns="http://www.sap.com/bc/bmt/wfm/def" type="internal" release="752" version="1.0" xml:lang="EN">| ).
     lo_xml->add( | <workflow id="{ mv_wfid }(0000)S">| ).
     lo_xml->add( |  <task>| ).
@@ -557,7 +555,7 @@ CLASS ltc_test DEFINITION FINAL FOR TESTING
   RISK LEVEL HARMLESS.
 
   PRIVATE SECTION.
-    CONSTANTS c_test_wf TYPE sww_task VALUE 'WS90000005' ##NO_TEXT.
+    CONSTANTS c_test_wf TYPE sww_task VALUE 'WS90000005'.
     DATA: mo_cut TYPE REF TO lcl_workflow_definition.
     METHODS:
       setup,
@@ -588,8 +586,8 @@ CLASS ltc_test IMPLEMENTATION.
 
   METHOD serialize.
     DATA: lo_mock TYPE REF TO ltd_workflow,
-          lv_xml TYPE string,
-          lv_exp TYPE string.
+          lv_xml  TYPE string,
+          lv_exp  TYPE string.
 
     lo_mock = ltd_workflow=>create( c_test_wf ).
 
@@ -597,8 +595,7 @@ CLASS ltc_test IMPLEMENTATION.
     lv_xml = zcl_abapgit_xml_pretty=>print(
                iv_xml           = lv_xml
                iv_ignore_errors = abap_false
-               iv_unpretty      = abap_false
-             ).
+               iv_unpretty      = abap_false ).
     REPLACE FIRST OCCURRENCE
       OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
       IN lv_xml
@@ -608,8 +605,7 @@ CLASS ltc_test IMPLEMENTATION.
     lv_exp = zcl_abapgit_xml_pretty=>print(
                iv_xml           = lv_exp
                iv_ignore_errors = abap_false
-               iv_unpretty      = abap_false
-             ).
+               iv_unpretty      = abap_false ).
     REPLACE FIRST OCCURRENCE
       OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
       IN lv_exp
