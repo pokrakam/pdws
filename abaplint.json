@@ -11,6 +11,11 @@
       "folder": "/deps",
       "files": "/src/**/*.*"
     }
+    {
+      "url": "https://github.com/abapGit/abapGit",
+      "folder": "/src",
+      "files": "/**/*.*"
+    }
   ],
   "syntax": {
     "version": "v702",
