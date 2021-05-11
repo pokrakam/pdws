@@ -60,19 +60,24 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
 
   METHOD serialize.
 
-    TRY.
-        DATA(def) = lcl_workflow_definition=>load( mv_wf ).
-      CATCH zcx_abapgit_exception INTO DATA(lo_error).
-        WRITE / lo_error->get_text( ).
-    ENDTRY.
-
     DATA: ls_wf_definition_key TYPE swd_wfdkey,
 
           lo_wfd_xml           TYPE REF TO cl_xml_document_base,
           lo_wfd_export        TYPE REF TO if_swf_pdef_export,
           lt_versions          TYPE TABLE OF swd_versns,
 
-          lo_node              TYPE REF TO if_ixml_element.
+          lo_node              TYPE REF TO if_ixml_element,
+          def                  TYPE REF TO lcl_workflow_definition,
+          lo_error             TYPE REF TO zcx_abapgit_exception,
+          lv_retcode           TYPE sysubrc,
+          lv_stream            TYPE string,
+          lv_size              TYPE sytabix.
+
+    TRY.
+        def = lcl_workflow_definition=>load( mv_wf ).
+      CATCH zcx_abapgit_exception INTO lo_error.
+        WRITE / lo_error->get_text( ).
+    ENDTRY.
 
     ls_wf_definition_key = get_active_definition_key( ).
 
@@ -88,9 +93,9 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
         EXPORTING
           pretty_print = 'X'
         IMPORTING
-          retcode      = DATA(lv_retcode)
-          stream       = DATA(lv_stream)
-          size         = DATA(lv_size)
+          retcode      = lv_retcode
+          stream       = lv_stream
+          size         = lv_size
       ).
       cl_demo_output=>display_xml( lv_stream ).
       rv_result = lv_stream.
@@ -147,19 +152,24 @@ CLASS lcl_main IMPLEMENTATION.
 
   METHOD run.
 
-    TRY.
-        DATA(def) = lcl_workflow_definition=>load( lv_wf ).
-      CATCH zcx_abapgit_exception INTO DATA(lo_error).
-        WRITE / lo_error->get_text( ).
-    ENDTRY.
-
     DATA: ls_wf_definition_key TYPE swd_wfdkey,
 
           lo_wfd_xml           TYPE REF TO cl_xml_document_base,
           lo_wfd_export        TYPE REF TO if_swf_pdef_export,
           lt_versions          TYPE TABLE OF swd_versns,
 
-          lo_node              TYPE REF TO if_ixml_element.
+          lo_node              TYPE REF TO if_ixml_element,
+          def                  TYPE REF TO lcl_workflow_definition,
+          lo_error             TYPE REF TO zcx_abapgit_exception,
+          lv_retcode           TYPE sysubrc,
+          lv_stream            TYPE string,
+          lv_size              TYPE sytabix.
+
+    TRY.
+        def = lcl_workflow_definition=>load( lv_wf ).
+      CATCH zcx_abapgit_exception INTO lo_error.
+        WRITE / lo_error->get_text( ).
+    ENDTRY.
 
     ls_wf_definition_key = get_active_definition_key( ).
 
@@ -175,9 +185,9 @@ CLASS lcl_main IMPLEMENTATION.
         EXPORTING
           pretty_print = 'X'
         IMPORTING
-          retcode      = DATA(lv_retcode)
-          stream       = DATA(lv_stream)
-          size         = DATA(lv_size)
+          retcode      = lv_retcode
+          stream       = lv_stream
+          size         = lv_size
       ).
       cl_demo_output=>display( lv_stream ).
     ELSE.
@@ -259,8 +269,10 @@ CLASS ltd_workflow IMPLEMENTATION.
 
 
   METHOD get_xml.
-    DATA: ts TYPE tzonref-tstamps.
-    DATA(xml) = NEW lcl_text_lines( ).
+    DATA ts TYPE tzonref-tstamps.
+    DATA xml TYPE REF TO lcl_text_lines.
+
+    xml = NEW lcl_text_lines( ).
 
     GET TIME STAMP FIELD ts.
 
