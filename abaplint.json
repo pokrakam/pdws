@@ -314,7 +314,7 @@
     "object_naming": {
       "clas": "^ZC(L|X)\\_ABAPGIT\\_",
       "intf": "^ZIF\\_ABAPGIT\\_",
-      "prog": "^ZABAPGIT",
+      "prog": "^Z",
       "fugr": "^ZABAPGIT",
       "tabl": "^Z",
       "ttyp": "^Z",
