@@ -10,7 +10,7 @@
       "url": "https://github.com/abaplint/deps",
       "folder": "/deps",
       "files": "/src/**/*.*"
-    }
+    },
     {
       "url": "https://github.com/abapGit/abapGit",
       "folder": "/src",
