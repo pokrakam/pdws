@@ -1,4 +1,4 @@
-REPORT zabapgit_test_pdws.
+REPORT zpdws.
 
 CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
 
@@ -266,7 +266,7 @@ ENDCLASS.
 CLASS ltd_workflow IMPLEMENTATION.
 
   METHOD create.
-    create object ro_result.
+    CREATE OBJECT ro_result.
     ro_result->mv_wfid = iv_wf_id.
   ENDMETHOD.
 
@@ -275,7 +275,7 @@ CLASS ltd_workflow IMPLEMENTATION.
     DATA lv_ts TYPE tzonref-tstamps.
     DATA lo_xml TYPE REF TO lcl_text_lines.
 
-    create object lo_xml.
+    CREATE OBJECT lo_xml.
 
     GET TIME STAMP FIELD lv_ts.
 
