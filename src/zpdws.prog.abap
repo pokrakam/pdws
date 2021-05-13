@@ -555,12 +555,19 @@ CLASS ltc_test DEFINITION FINAL FOR TESTING
   RISK LEVEL HARMLESS.
 
   PRIVATE SECTION.
+
     CONSTANTS c_test_wf TYPE sww_task VALUE 'WS90000005'.
-    DATA: mo_cut TYPE REF TO lcl_workflow_definition.
-    METHODS:
-      setup,
-      invalid_id_doesnt_load FOR TESTING RAISING cx_static_check,
-      serialize FOR TESTING RAISING cx_static_check.
+
+    DATA mo_cut TYPE REF TO lcl_workflow_definition.
+
+    METHODS setup.
+    METHODS format_xml IMPORTING iv_xml        TYPE string
+                       RETURNING VALUE(rv_exp) TYPE string
+                       RAISING   zcx_abapgit_exception.
+
+    METHODS invalid_id_doesnt_load FOR TESTING RAISING cx_static_check.
+    METHODS serialize FOR TESTING RAISING cx_static_check.
+
 ENDCLASS.
 
 
@@ -574,47 +581,59 @@ CLASS ltc_test IMPLEMENTATION.
     ENDTRY.
   ENDMETHOD.
 
+
   METHOD invalid_id_doesnt_load.
+
     DATA lo_cut TYPE REF TO lcl_workflow_definition.
+
     TRY.
         lo_cut = lcl_workflow_definition=>load( 'WS99999990' ).
         cl_abap_unit_assert=>fail( 'Exception not raised' ).
       CATCH zcx_abapgit_exception.
         "As expected
     ENDTRY.
+
   ENDMETHOD.
 
+
   METHOD serialize.
+
     DATA: lo_mock TYPE REF TO ltd_workflow,
           lv_xml  TYPE string,
           lv_exp  TYPE string.
 
     lo_mock = ltd_workflow=>create( c_test_wf ).
 
-    lv_xml = mo_cut->serialize( ).
-    lv_xml = zcl_abapgit_xml_pretty=>print(
-               iv_xml           = lv_xml
-               iv_ignore_errors = abap_false
-               iv_unpretty      = abap_false ).
-    REPLACE FIRST OCCURRENCE
-      OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
-      IN lv_xml
-      WITH '<?xml version="1.0" encoding="utf-8"?>'.
-
     lv_exp = lo_mock->get_xml( ).
-    lv_exp = zcl_abapgit_xml_pretty=>print(
-               iv_xml           = lv_exp
-               iv_ignore_errors = abap_false
-               iv_unpretty      = abap_false ).
-    REPLACE FIRST OCCURRENCE
-      OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
-      IN lv_exp
-      WITH '<?xml version="1.0" encoding="utf-8"?>'.
+    lv_exp = format_xml( lv_exp ).
+
+    lv_xml = mo_cut->serialize( ).
+    lv_xml = format_xml( lv_xml ).
+
+    IF lv_xml <> lv_exp.
+      "Once more in case timestamp rolled over to the next second
+      lv_exp = lo_mock->get_xml( ).
+      lv_exp = format_xml( lv_exp ).
+    ENDIF.
 
     cl_abap_unit_assert=>assert_equals( act = lv_xml
                                         exp = lv_exp ).
 
   ENDMETHOD.
 
+
+  METHOD format_xml.
+
+    rv_exp = zcl_abapgit_xml_pretty=>print(
+               iv_xml           = iv_xml
+               iv_ignore_errors = abap_false
+               iv_unpretty      = abap_false ).
+
+    REPLACE FIRST OCCURRENCE
+      OF REGEX '<\?xml version="1\.0" encoding="[\w-]+"\?>'
+      IN rv_exp
+      WITH '<?xml version="1.0" encoding="utf-8"?>'.
+
+  ENDMETHOD.
 
 ENDCLASS.
