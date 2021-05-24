@@ -124,6 +124,7 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
 
 ENDCLASS.
 
+
 CLASS lcl_main DEFINITION FINAL.
 
   PUBLIC SECTION.
@@ -344,8 +345,8 @@ CLASS ltd_workflow IMPLEMENTATION.
     lo_xml->add( |     <J NAME="_RFC_DESTINATION:_Rfc_Destination:" TYPE="::RFCDEST:C:0:0" PROPS="0C001231" LTEXTS="EE015RFC DestinationRFC Destination" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
     lo_xml->add( |     <K NAME="_ATTACH_COMMENT_OBJECTS:_Attach_Comment_Objects:" TYPE="SOFM:BO::h:0:0" PROPS="0C925A71" LTEXTS="EE007CommentComment" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
     lo_xml->add( |     <L NAME="_START_EVENT_IDENTIFIER:_Start_Event_Identifier:" TYPE="CL_SWF_UTL_EVT_IDENTIFIER:CL::h:0:0" PROPS="0CC20231" LTEXTS="EE017ID of Start EventID of Start Event" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
-    lo_xml->add(
-|     <M NAME="_WF_TYPENAME_MAPPING:_WF_Typename_Mapping:" TYPE="::SWF_CNT_MAPPING_TAB:h:0:0" PROPS="0C120271" LTEXTS="EE022Relation of Type NamesRelation of Type Names (Original and Copy)" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
+    lo_xml->add( |     <M NAME="_WF_TYPENAME_MAPPING:_WF_Typename_Mapping:" TYPE="::SWF_CNT_MAPPING_TAB:h:0:0" PROPS="0C120271" LTEXTS="EE022Relation of Type NamesRelation of Type Names (Original and Copy)" CHGDTA="752:{ lv_ts }:| &&
+                      |DEVELOPER::00000000000000:"/>| ).
     lo_xml->add( |     <N NAME="_WF_START_QUERY:_WF_Start_Query:" TYPE="::SWF_STRING:g:0:0" PROPS="0C001231" LTEXTS="EE011Start QueryWorkflow Start Query in URL Syntax" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
     lo_xml->add( |     <O NAME="_WF_LAST_CALLBACK_WI:_WF_Last_Callback_Wi:" TYPE="WORKITEM:BO::u:0:0" PROPS="0C920031" LTEXTS="EE018Callback Work ItemCallback Work Item" CHGDTA="752:{ lv_ts }:DEVELOPER::00000000000000:"/>| ).
     lo_xml->add( |    </ELEMENTS>| ).
