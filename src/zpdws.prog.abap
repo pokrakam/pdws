@@ -630,9 +630,14 @@ CLASS ltc_test IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD deserialize.
-    DATA(lo_mock) = ltd_workflow=>create( c_test_wf ).
-    DATA(xml) = lo_mock->get_xml( ).
-    mo_cut->deserialize( xml ).
+
+    DATA: lo_mock TYPE REF TO ltd_workflow,
+          lt_xml  TYPE string.
+
+    lo_mock = ltd_workflow=>create( c_test_wf ).
+    lt_xml = lo_mock->get_xml( ).
+    mo_cut->deserialize( lt_xml ).
+
   ENDMETHOD.
 
   METHOD format_xml.
