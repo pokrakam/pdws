@@ -8,6 +8,8 @@ CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
                         RAISING   zcx_abapgit_exception.
 
     METHODS serialize RETURNING VALUE(rv_result) TYPE string.
+    METHODS deserialize IMPORTING xml TYPE string
+                        RAISING   zcx_abapgit_exception.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -121,6 +123,10 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD deserialize.
+
+  ENDMETHOD.
 
 ENDCLASS.
 
@@ -568,6 +574,7 @@ CLASS ltc_test DEFINITION FINAL FOR TESTING
 
     METHODS invalid_id_doesnt_load FOR TESTING RAISING cx_static_check.
     METHODS serialize FOR TESTING RAISING cx_static_check.
+    METHODS deserialize FOR TESTING RAISING cx_static_check.
 
 ENDCLASS.
 
@@ -622,6 +629,11 @@ CLASS ltc_test IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD deserialize.
+    DATA(lo_mock) = ltd_workflow=>create( c_test_wf ).
+    DATA(xml) = lo_mock->get_xml( ).
+    mo_cut->deserialize( xml ).
+  ENDMETHOD.
 
   METHOD format_xml.
 
