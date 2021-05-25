@@ -8,7 +8,7 @@ CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
                         RAISING   zcx_abapgit_exception.
 
     METHODS serialize RETURNING VALUE(rv_result) TYPE string.
-    METHODS deserialize IMPORTING xml TYPE string
+    METHODS deserialize IMPORTING iv_xml TYPE string
                         RAISING   zcx_abapgit_exception.
 
   PROTECTED SECTION.
