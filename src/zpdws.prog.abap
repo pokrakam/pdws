@@ -8,7 +8,7 @@ CLASS lcl_workflow_definition DEFINITION CREATE PUBLIC.
                         RAISING   zcx_abapgit_exception.
 
     METHODS serialize RETURNING VALUE(rv_result) TYPE string.
-    METHODS deserialize IMPORTING iv_xml TYPE string
+    METHODS deserialize IMPORTING iv_xml TYPE REF TO zif_abapgit_xml_input
                         RAISING   zcx_abapgit_exception.
 
   PROTECTED SECTION.
@@ -125,6 +125,26 @@ CLASS lcl_workflow_definition IMPLEMENTATION.
 
 
   METHOD deserialize.
+
+    CALL FUNCTION 'RH_HRSOBJECT_CORR_CHECK'
+      EXPORTING
+        act_otype                    = 'WS'
+        act_objid                    = '00000000'
+      EXCEPTIONS
+        no_client_indep_main_allowed = 01
+        cancellation_by_user         = 02.
+    check_subrc_for( 'RH_HRSOBJECT_CORR_CHECK' ).
+
+    DATA(xml) = iv_xml->get_raw( ).
+    CALL FUNCTION 'SWD_WORKFLOW_CREATE'
+      EXPORTING
+        im_task         = mv_wf
+*       im_short        =                  " Object Abbreviation
+*       im_stext        =                  " Object Description
+      EXCEPTIONS
+        action_canceled = 1
+        OTHERS          = 2.
+    check_subrc_for( 'SWD_WORKFLOW_CREATE' ).
 
   ENDMETHOD.
 
@@ -260,12 +280,14 @@ CLASS ltd_workflow DEFINITION FINAL FOR TESTING
     CLASS-METHODS create IMPORTING iv_wf_id         TYPE sww_task
                          RETURNING VALUE(ro_result) TYPE REF TO ltd_workflow.
     METHODS get_xml RETURNING VALUE(rv_result) TYPE string.
+    METHODS get_agxml RETURNING VALUE(rv_result) TYPE string.
 
   PRIVATE SECTION.
     DATA mo_cut TYPE REF TO lcl_workflow_definition.
     DATA mv_wfid TYPE sww_task.
 
     METHODS dummy FOR TESTING RAISING cx_static_check.
+
 
 ENDCLASS.
 
@@ -286,6 +308,8 @@ CLASS ltd_workflow IMPLEMENTATION.
 
     GET TIME STAMP FIELD lv_ts.
 
+*    lo_xml->add( |<?xml version="1.0" encoding="utf-16"?>| ).
+*    lo_xml->add( |<abapGit version="v1.0.0" serializer="LCL_OBJECT_DEVC" serializer_version="v1.0.0">| ).
     lo_xml->add( |<workflow_exchange xmlns="http://www.sap.com/bc/bmt/wfm/def" type="internal" release="752" version="1.0" xml:lang="EN">| ).
     lo_xml->add( | <workflow id="{ mv_wfid }(0000)S">| ).
     lo_xml->add( |  <task>| ).
@@ -547,6 +571,21 @@ CLASS ltd_workflow IMPLEMENTATION.
     lo_xml->add( |  </lines>| ).
     lo_xml->add( | </workflow>| ).
     lo_xml->add( |</workflow_exchange>| ).
+*    lo_xml->add( |</abapGit| ).
+
+    rv_result = lo_xml->get( ).
+
+  ENDMETHOD.
+
+  METHOD get_agxml.
+    DATA lo_xml TYPE REF TO lcl_text_lines.
+
+    CREATE OBJECT lo_xml.
+
+    lo_xml->add( |<?xml version="1.0" encoding="utf-16"?>| ).
+    lo_xml->add( |<abapGit version="v1.0.0" serializer="LCL_OBJECT_DEVC" serializer_version="v1.0.0">| ).
+    lo_xml->add( get_xml( ) ).
+    lo_xml->add( |</abapGit| ).
 
     rv_result = lo_xml->get( ).
 
@@ -632,11 +671,12 @@ CLASS ltc_test IMPLEMENTATION.
   METHOD deserialize.
 
     DATA: lo_mock TYPE REF TO ltd_workflow,
-          lt_xml  TYPE string.
+          lv_xml  TYPE string.
 
     lo_mock = ltd_workflow=>create( c_test_wf ).
-    lt_xml = lo_mock->get_xml( ).
-    mo_cut->deserialize( lt_xml ).
+    lv_xml = lo_mock->get_agxml( ).
+    DATA(lo_xml) = NEW zcl_abapgit_xml_input( lv_xml ).
+    mo_cut->deserialize( lo_xml ).
 
   ENDMETHOD.
 
