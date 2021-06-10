@@ -670,12 +670,23 @@ CLASS ltc_test IMPLEMENTATION.
 
   METHOD deserialize.
 
-    DATA: lo_mock TYPE REF TO ltd_workflow,
-          lv_xml  TYPE string.
+    DATA: lo_mock         TYPE REF TO ltd_workflow,
+          lv_xml          TYPE string,
+          lo_xml_document TYPE REF TO if_ixml_document,
+          lo_xml_element  TYPE REF TO if_ixml_element,
+          li_xml_out         TYPE REF TO zif_abapgit_xml_output,
+          lo_xml          TYPE REF TO zcl_abapgit_xml_input.
 
     lo_mock = ltd_workflow=>create( c_test_wf ).
-    lv_xml = lo_mock->get_agxml( ).
-    DATA(lo_xml) = NEW zcl_abapgit_xml_input( lv_xml ).
+    lv_xml = lo_mock->get_xml( ).
+
+    lo_xml_document = cl_ixml_80_20=>parse_to_document( stream_string = lv_xml ).
+    lo_xml_element = lo_xml_document->get_root_element( ).
+
+    li_xml_out = NEW zcl_abapgit_xml_output( ).
+    li_xml_out->set_raw( lo_xml_element ).
+
+    lo_xml = NEW zcl_abapgit_xml_input( li_xml_out->render( ) ).
     mo_cut->deserialize( lo_xml ).
 
   ENDMETHOD.
